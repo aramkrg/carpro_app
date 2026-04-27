@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'core/theme.dart';
 import 'screens/splash_screen.dart';
 
@@ -25,7 +26,7 @@ class CarProApp extends StatelessWidget {
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF1A2332),
               elevation: 0,
-              systemOverlayStyle: const SystemUiOverlayStyle(
+              systemOverlayStyle: const SystemUiOverlayStyle((
                 statusBarColor: Colors.white,
                 statusBarBrightness: Brightness.dark,
                 statusBarIconBrightness: Brightness.dark,

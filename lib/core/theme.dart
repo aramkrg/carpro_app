@@ -144,7 +144,7 @@ class ThemeManager {
     } else {
       _active = Themes.oceanBlue;
     }
-    themeNotifier.value = themeNotifier.value + 1;
+themeNotifier.value = _active;t
   }
 
   static void load() {
@@ -153,4 +153,4 @@ class ThemeManager {
   }
 }
 
-final themeNotifier = ValueNotifier<int>(0);
+final themeNotifier = ValueNotifier<AppTheme>(Themes.oceanBlue);
