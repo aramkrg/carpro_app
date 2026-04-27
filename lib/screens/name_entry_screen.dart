@@ -60,6 +60,6 @@ class _NameState extends State<NameEntryScreen> {
               InpField(ctrl: _ctrl, hint: 'Your name', icon: Icons.person_outline_rounded),
               const SizedBox(height: 24),
               PriBtn(label: _saving ? '…' : T.g('continue'), onTap: _saving ? null : _save, loading: _saving),
-             ) ;
+             ])))))
   }
 }

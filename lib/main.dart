@@ -26,8 +26,7 @@ class CarProApp extends StatelessWidget {
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF1A2332),
               elevation: 0,
-              systemOverlayStyle: const SystemUiOverlayStyle((
-                statusBarColor: Colors.white,
+              systemOverlayStyle: const SystemUiOverlayStyle((                statusBarColor: Colors.white,
                 statusBarBrightness: Brightness.dark,
                 statusBarIconBrightness: Brightness.dark,
               ),
@@ -37,4 +36,4 @@ class CarProApp extends StatelessWidget {
       },
     );
   }
-}
+;
