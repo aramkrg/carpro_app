@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../core/constants.dart';
 import '../core/translations.dart';
@@ -34,9 +33,9 @@ class _LangState extends State<LanguageScreen> {
     if (_sel == null) return;
     if (widget.fromProfile) { Navigator.pop(context); return; }
     Navigator.of(context).pushReplacement(PageRouteBuilder(
-      pageBuilder: (_, _, _) => const PhoneScreen(),
+      pageBuilder: (_, __, ___) => const PhoneScreen(),
       transitionDuration: const Duration(milliseconds: 400),
-      transitionsBuilder: (_, a, _, c) => FadeTransition(opacity: a, child: c)));
+      transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c)));
   }
 
   @override
