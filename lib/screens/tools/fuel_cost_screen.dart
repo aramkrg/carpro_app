@@ -31,8 +31,9 @@ class _FuelState extends State<FuelCostScreen> {
     final distKm = _distanceUnit == 'miles' ? dist * 1.60934 : dist;
     // Normalize consumption to L/100km
     double l100;
-    if (_consumptionUnit == 'L/100km')   l100 = cons;
-    else if (_consumptionUnit == 'km/L') l100 = cons == 0 ? 0 : 100 / cons;
+    if (_consumptionUnit == 'L/100km') {
+      l100 = cons;
+    } else if (_consumptionUnit == 'km/L') l100 = cons == 0 ? 0 : 100 / cons;
     else /* mpg */                       l100 = cons == 0 ? 0 : 235.214583 / cons;
     final litres = (distKm / 100) * l100;
     final cost = litres * pr;

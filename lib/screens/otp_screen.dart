@@ -28,12 +28,20 @@ class _OtpState extends State<OtpScreen> {
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_cd > 0) setState(() => _cd--); else _timer.cancel();
+      if (_cd > 0) {
+        setState(() => _cd--);
+      } else {
+        _timer.cancel();
+      }
     });
   }
   @override void dispose() {
-    for (var x in _boxes) x.dispose();
-    for (var x in _foci)  x.dispose();
+    for (var x in _boxes) {
+      x.dispose();
+    }
+    for (var x in _foci) {
+      x.dispose();
+    }
     _timer.cancel();
     super.dispose();
   }
@@ -124,7 +132,11 @@ class _OtpState extends State<OtpScreen> {
                     await AuthService.sendOtp(widget.phone);
                     setState(() => _cd = 30);
                     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-                      if (_cd > 0) setState(() => _cd--); else _timer.cancel();
+                      if (_cd > 0) {
+                        setState(() => _cd--);
+                      } else {
+                        _timer.cancel();
+                      }
                     });
                   },
                   child: Text(T.g('resend'), style: TextStyle(color: pri, fontWeight: FontWeight.w600, fontSize: 14))),

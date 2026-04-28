@@ -19,9 +19,9 @@ class _SplashState extends State<SplashScreen> with TickerProviderStateMixin {
   @override void dispose() { _ring.dispose(); _fade.dispose(); super.dispose(); }
 
   void _go(Widget page) => Navigator.of(context).pushReplacement(PageRouteBuilder(
-    pageBuilder: (_, __, ___) => page,
+    pageBuilder: (_, _, _) => page,
     transitionDuration: const Duration(milliseconds: 500),
-    transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c)));
+    transitionsBuilder: (_, a, _, c) => FadeTransition(opacity: a, child: c)));
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ class _SplashState extends State<SplashScreen> with TickerProviderStateMixin {
           colors: [Color(0xFF0D1B3E), Color(0xFF060B18)]))),
         Center(child: AnimatedBuilder(
           animation: _ring,
-          builder: (_, __) => Transform.rotate(
+          builder: (_, _) => Transform.rotate(
             angle: _ring.value * 2 * 3.14159,
             child: CustomPaint(size: Size(sz.width * 0.78, sz.width * 0.78), painter: _NeonRing())))),
         FadeTransition(opacity: _fade, child: SafeArea(child: Column(children: [

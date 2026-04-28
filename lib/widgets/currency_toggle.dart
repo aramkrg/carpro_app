@@ -17,7 +17,7 @@ class CurrToggle extends StatelessWidget {
 
 class _CTile extends StatelessWidget {
   final String label; final bool sel, left; final VoidCallback onTap;
-  const _CTile({super.key, required this.label, required this.sel, required this.left, required this.onTap});
+  const _CTile({required this.label, required this.sel, required this.left, required this.onTap});
   @override
   Widget build(BuildContext context) {
     final pri = ThemeManager.active.primary;

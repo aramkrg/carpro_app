@@ -51,7 +51,7 @@ class Step4Price extends StatelessWidget {
           const Icon(Icons.payment_rounded, color: C.primary, size: 22),
           const SizedBox(width: 12),
           Expanded(child: Text(T.g('installments'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
-          Switch(value: false, onChanged: (_) {}, activeColor: C.primary),
+          Switch(value: false, onChanged: (_) {}, activeThumbColor: C.primary),
         ])),
     ],
   ]);

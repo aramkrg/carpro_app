@@ -29,7 +29,7 @@ class _MsgState extends State<MessagesTab> {
       Expanded(child: _chats.isEmpty
         ? Center(child: Text(T.g('no_msgs'), style: const TextStyle(color: C.textSub, fontSize: 15)))
         : ListView.separated(padding: const EdgeInsets.all(14), itemCount: _chats.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, color: C.border),
+            separatorBuilder: (_, _) => const Divider(height: 1, color: C.border),
             itemBuilder: (_, i) {
               final m = _chats[i];
               return GestureDetector(

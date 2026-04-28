@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/auth.dart';
 import '../core/constants.dart';
 import '../core/translations.dart';
 import '../core/theme.dart';
@@ -10,6 +11,7 @@ import 'reels/reels_tab.dart';
 import 'add_car/add_car_tab.dart';
 import 'messages/messages_tab.dart';
 import 'profile/profile_tab.dart';
+import '../widgets/login_wall.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -22,36 +24,43 @@ class _ShellState extends State<MainShell> {
     super.initState();
     langNotifier.addListener(_r);
     themeNotifier.addListener(_r);
+    authNotifier.addListener(_r);
     mainTabNotifier.addListener(_onTabRequest);
   }
   @override void dispose() {
     langNotifier.removeListener(_r);
     themeNotifier.removeListener(_r);
+    authNotifier.removeListener(_r);
     mainTabNotifier.removeListener(_onTabRequest);
     super.dispose();
   }
   void _r() => setState(() {});
   void _onTabRequest() => setState(() => _idx = mainTabNotifier.value);
 
+  void _onAddTap() {
+    // REQ 10: Guest must login to post
+    requireLogin(context, () {
+      setState(() => _idx = 3);
+      mainTabNotifier.value = 3;
+    }, reason: 'Sign in to post your car for sale');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = AuthService.current;
+    final pri = ThemeManager.active.primary;
+
     return Directionality(
       textDirection: T.isRTL ? TextDirection.rtl : TextDirection.ltr,
       child: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) {
           if (didPop) return;
-          // 1. Add Car tab with wizard past step 0 → go back one step
           if (_idx == 3 && addCarStepNotifier.value > 0) {
             addCarStepNotifier.value = addCarStepNotifier.value - 1;
             return;
           }
-          // 2. Any tab other than Home → switch to Home
-          if (_idx != 0) {
-            setState(() => _idx = 0);
-            return;
-          }
-          // 3. Home tab → exit app
+          if (_idx != 0) { setState(() => _idx = 0); return; }
           SystemNavigator.pop();
         },
         child: Scaffold(
@@ -63,28 +72,58 @@ class _ShellState extends State<MainShell> {
             decoration: BoxDecoration(color: Colors.white,
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, -3))]),
             child: SafeArea(top: false, child: SizedBox(height: 62, child: Row(children: [
-              _BTab(icon: Icons.home_outlined,              active: Icons.home_rounded,            label: T.g('nav_home'),   idx: 0, cur: _idx, onTap: () { setState(() => _idx = 0); mainTabNotifier.value = 0; }),
-              _BTab(icon: Icons.search_outlined,             active: Icons.search_rounded,          label: T.g('nav_search'), idx: 1, cur: _idx, onTap: () { setState(() => _idx = 1); mainTabNotifier.value = 1; }),
-              _BTab(icon: Icons.play_circle_outline_rounded, active: Icons.play_circle_rounded,     label: 'Reels',          idx: 2, cur: _idx, onTap: () { setState(() => _idx = 2); mainTabNotifier.value = 2; }),
-              // Centre Add Car FAB — theme-aware, index 3
+              // Home
+              _BTab(icon: Icons.home_outlined, active: Icons.home_rounded, label: T.g('nav_home'), idx: 0, cur: _idx,
+                onTap: () { setState(() => _idx = 0); mainTabNotifier.value = 0; }),
+              // Search
+              _BTab(icon: Icons.search_outlined, active: Icons.search_rounded, label: T.g('nav_search'), idx: 1, cur: _idx,
+                onTap: () { setState(() => _idx = 1); mainTabNotifier.value = 1; }),
+              // REQ 9: Center FAB for Add Car
               Expanded(child: GestureDetector(
-                onTap: () { setState(() => _idx = 3); mainTabNotifier.value = 3; },
+                onTap: _onAddTap,
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Container(width: 44, height: 44, decoration: BoxDecoration(shape: BoxShape.circle,
-                    gradient: LinearGradient(colors: _idx == 3
-                      ? [ThemeManager.active.primaryLt, ThemeManager.active.primaryDk]
-                      : [ThemeManager.active.primary,   ThemeManager.active.primaryDk]),
-                    boxShadow: [BoxShadow(color: ThemeManager.active.primary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 3))]),
-                    child: const Icon(Icons.add_rounded, color: Colors.white, size: 26)),
+                  Container(width: 50, height: 50,
+                    decoration: BoxDecoration(shape: BoxShape.circle,
+                      gradient: LinearGradient(colors: _idx == 3
+                        ? [ThemeManager.active.primaryLt, ThemeManager.active.primaryDk]
+                        : [ThemeManager.active.primary, ThemeManager.active.primaryDk]),
+                      boxShadow: [BoxShadow(color: ThemeManager.active.primary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 3))]),
+                    child: const Icon(Icons.add_rounded, color: Colors.white, size: 28)),
                   const SizedBox(height: 2),
-                  Text(T.g('nav_add'), style: TextStyle(
-                    fontSize: 9,
+                  Text(T.g('nav_add'), style: TextStyle(fontSize: 9,
                     color: _idx == 3 ? ThemeManager.active.primary : C.textSub,
                     fontWeight: _idx == 3 ? FontWeight.w700 : FontWeight.w400)),
                 ]))),
-              _BTab(icon: Icons.chat_bubble_outline_rounded, active: Icons.chat_bubble_rounded,    label: T.g('nav_msgs'),   idx: 4, cur: _idx, onTap: () { setState(() => _idx = 4); mainTabNotifier.value = 4; }, badge: 2),
-              _BTab(icon: Icons.person_outline_rounded,      active: Icons.person_rounded,         label: T.g('nav_profile'),idx: 5, cur: _idx, onTap: () { setState(() => _idx = 5); mainTabNotifier.value = 5; }),
-            ])))),
+              // Reels
+              _BTab(icon: Icons.play_circle_outline_rounded, active: Icons.play_circle_rounded, label: 'Reels', idx: 2, cur: _idx,
+                onTap: () { setState(() => _idx = 2); mainTabNotifier.value = 2; }),
+              // REQ 9: Profile with user avatar
+              Expanded(child: GestureDetector(
+                onTap: () { setState(() => _idx = 5); mainTabNotifier.value = 5; },
+                behavior: HitTestBehavior.opaque,
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  // Show profile photo or person icon
+                  Container(
+                    width: 28, height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _idx == 5 ? pri : const Color(0xFFEEF1F8),
+                      border: _idx == 5 ? Border.all(color: pri, width: 2) : null,
+                    ),
+                    child: user != null && user.name.isNotEmpty
+                      ? Center(child: Text(user.name[0].toUpperCase(),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900,
+                            color: _idx == 5 ? Colors.white : C.textSub)))
+                      : Icon(Icons.person_rounded, size: 18,
+                          color: _idx == 5 ? Colors.white : const Color(0xFFAAB4CC)),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(T.g('nav_profile'), style: TextStyle(fontSize: 10,
+                    color: _idx == 5 ? pri : const Color(0xFFAAB4CC),
+                    fontWeight: _idx == 5 ? FontWeight.w700 : FontWeight.w400)),
+                ]))),
+            ]))),
+          ),
         ),
       ),
     );

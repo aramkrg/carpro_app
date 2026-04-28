@@ -1,85 +1,149 @@
 import 'package:flutter/material.dart';
-import '../../core/constants.dart';
-import '../../core/translations.dart';
 import '../../core/theme.dart';
+import '../../core/constants.dart';
+import '../utilities/refill_wallet_screen.dart';
 
-class WalletScreen extends StatelessWidget {
+class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
+
+  @override
+  State<WalletScreen> createState() => _WalletScreenState();
+}
+
+class _WalletScreenState extends State<WalletScreen> {
+  final double _balance = 0;
+
+  final List<Map<String, dynamic>> _transactions = [
+    {'type': 'debit', 'title': 'Private Listing Payment', 'subtitle': 'Paid for a private listing', 'amount': 10000, 'date': '2026-04-12 06:53 PM'},
+    {'type': 'credit', 'title': 'Account Refilled', 'subtitle': 'Wallet refilled by FIB', 'amount': 10000, 'date': '2026-04-12 06:52 PM'},
+    {'type': 'debit', 'title': 'Private Listing Payment', 'subtitle': 'Paid for a private listing', 'amount': 10000, 'date': '2025-08-20 03:02 PM'},
+    {'type': 'credit', 'title': 'Account Refilled', 'subtitle': 'Wallet refilled by FIB', 'amount': 10000, 'date': '2025-08-20 02:59 PM'},
+    {'type': 'debit', 'title': 'VIP Listing Fee', 'subtitle': 'Premium listing boost', 'amount': 50000, 'date': '2025-07-15 01:30 PM'},
+  ];
+
+  String _formatAmount(double n) {
+    return n.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final pri = ThemeManager.active.primary;
-    return Directionality(textDirection: T.isRTL ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(backgroundColor: C.bg,
-        appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: C.navy, size: 20),
-            onPressed: () => Navigator.pop(context)),
-          title: Text(T.g('wallet'),
-            style: const TextStyle(color: C.navy, fontWeight: FontWeight.w800, fontSize: 18))),
-        body: ListView(padding: const EdgeInsets.all(16), children: [
-          Container(padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(colors: [pri, ThemeManager.active.primaryDk]),
-              boxShadow: [BoxShadow(color: pri.withOpacity(0.25), blurRadius: 14, offset: const Offset(0, 5))]),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-              Text('Current Balance', style: TextStyle(fontSize: 13, color: Colors.white70)),
-              SizedBox(height: 6),
-              Text('45,000 IQD', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
-              SizedBox(height: 2),
-              Text('≈ \$34', style: TextStyle(fontSize: 13, color: Colors.white70)),
-            ])),
-          const SizedBox(height: 14),
-          Row(children: [
-            Expanded(child: _WalletAction(icon: Icons.add_rounded,    label: 'Top Up',  onTap: () {})),
-            const SizedBox(width: 10),
-            Expanded(child: _WalletAction(icon: Icons.history_rounded, label: 'History', onTap: () {})),
-          ]),
-          const SizedBox(height: 16),
-          const Text('Recent Transactions',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: C.navy)),
-          const SizedBox(height: 8),
-          _TxItem(title: 'Top up via ZainCash',         amount: '+50,000', when: 'Today',     positive: true),
-          _TxItem(title: 'Listing fee — Toyota Camry',  amount: '-10,000', when: 'Today',     positive: false),
-          _TxItem(title: 'VIP boost — 7 days',          amount: '-5,000',  when: 'Yesterday', positive: false),
-        ])));
+    return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+        backgroundColor: Colors.grey.shade100,
+        elevation: 0,
+        foregroundColor: Colors.black,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // ── Balance header ──────────────────────────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              color: Colors.grey.shade100,
+              child: Column(
+                children: [
+                  const Text('Wallet Balance', style: TextStyle(color: Colors.black54, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Text('${_formatAmount(_balance)} IQD', style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.black)),
+                ],
+              ),
+            ),
+
+            // ── Refill button ───────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text('Refill Wallet', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const RefillWalletScreen()));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black87,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Transaction history ─────────────────────────────────────
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(20),
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Transaction History', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  ..._buildTransactions(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
-}
 
-class _WalletAction extends StatelessWidget {
-  final IconData icon; final String label; final VoidCallback onTap;
-  const _WalletAction({required this.icon, required this.label, required this.onTap});
-  @override
-  Widget build(BuildContext context) => GestureDetector(onTap: onTap,
-    child: Container(padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: C.border)),
-      child: Column(children: [
-        Icon(icon, color: ThemeManager.active.primary, size: 24),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.textMain)),
-      ])));
-}
+  List<Widget> _buildTransactions() {
+    String? lastDate;
+    final widgets = <Widget>[];
 
-class _TxItem extends StatelessWidget {
-  final String title, amount, when; final bool positive;
-  const _TxItem({required this.title, required this.amount, required this.when, required this.positive});
-  @override
-  Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 8),
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: C.border)),
-    child: Row(children: [
-      Container(width: 36, height: 36,
-        decoration: BoxDecoration(shape: BoxShape.circle,
-          color: (positive ? C.green : C.red).withOpacity(0.1)),
-        child: Icon(positive ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-          color: positive ? C.green : C.red, size: 18)),
-      const SizedBox(width: 12),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.navy)),
-        Text(when,  style: const TextStyle(fontSize: 11, color: C.textSub)),
-      ])),
-      Text('$amount IQD',
-        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: positive ? C.green : C.red)),
-    ]));
+    for (final tx in _transactions) {
+      final date = tx['date'].toString().split(' ')[0];
+      if (date != lastDate) {
+        lastDate = date;
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 12),
+          child: Text(tx['date'], style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+        ));
+      }
+
+      final isCredit = tx['type'] == 'credit';
+      widgets.add(Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isCredit ? Icons.arrow_back : Icons.arrow_forward,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(tx['title'], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(tx['subtitle'], style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                ],
+              ),
+            ),
+            Text(
+              '${_formatAmount((tx['amount'] as int).toDouble())} IQD',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ],
+        ),
+      ));
+
+      widgets.add(Divider(color: Colors.grey.shade100, height: 1));
+    }
+    return widgets;
+  }
 }

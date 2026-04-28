@@ -1,227 +1,372 @@
 import 'package:flutter/material.dart';
-import '../../core/constants.dart';
-import '../../core/translations.dart';
+import '../../core/theme.dart';
 
-// ═══════════════════════════════════════════════════════════════════
-// 2D DAMAGE PAINTER — 5 views + photo upload + airbag toggle
-// All views are OPTIONAL — leave any blank that don't apply.
-// ═══════════════════════════════════════════════════════════════════
 class DamagePainterScreen extends StatefulWidget {
-  const DamagePainterScreen({super.key});
-  @override State<DamagePainterScreen> createState() => _PainterState();
-}
+  final List<String> initialPainted;
+  final Function(List<String>)? onSave;
 
-class _DamageView {
-  final String key, label;
-  final IconData icon;
-  final double iconRotation; // radians; rotate same car icon to suggest different views
-  const _DamageView(this.key, this.label, this.icon, this.iconRotation);
-}
-
-class _PainterState extends State<DamagePainterScreen> {
-  // One stroke list per view. Empty list = view skipped (it's optional).
-  final Map<String, List<Offset>> _strokes = {
-    'top': [], 'front': [], 'back': [], 'left': [], 'right': [],
-  };
-  // Number of damage photos the user added (placeholder — wires to real picker in production)
-  int _photoCount = 0;
-  // Airbag deployment status — required toggle
-  bool? _airbagsDeployed;
-
-  static const _views = <_DamageView>[
-    _DamageView('top',   'Top View',         Icons.directions_car_filled_rounded, 1.5708),  // 90°
-    _DamageView('front', 'Front View',       Icons.directions_car_filled_rounded, 0),
-    _DamageView('back',  'Back View',        Icons.directions_car_filled_rounded, 3.14159), // 180°
-    _DamageView('left',  'Left Side View',   Icons.airport_shuttle_rounded, 0),
-    _DamageView('right', 'Right Side View',  Icons.airport_shuttle_rounded, 3.14159),       // mirrored
-  ];
-
-  void _clearAll() => setState(() {
-    for (final k in _strokes.keys) _strokes[k] = [];
-    _photoCount = 0;
-    _airbagsDeployed = null;
+  const DamagePainterScreen({
+    super.key,
+    this.initialPainted = const [],
+    this.onSave,
   });
 
   @override
+  State<DamagePainterScreen> createState() => _DamagePainterScreenState();
+}
+
+class _DamagePainterScreenState extends State<DamagePainterScreen> {
+  String _bodyType = 'sedan'; // 'sedan' or 'suv'
+  late Set<String> _painted;
+
+  // All paintable parts for each body type
+  final Map<String, List<_CarPart>> _parts = {
+    'sedan': [
+      _CarPart('hood', 'Hood', const Rect.fromLTWH(120, 120, 120, 60)),
+      _CarPart('roof', 'Roof', const Rect.fromLTWH(100, 80, 160, 55)),
+      _CarPart('trunk', 'Trunk', const Rect.fromLTWH(120, 195, 120, 55)),
+      _CarPart('front_bumper', 'Front Bumper', const Rect.fromLTWH(115, 180, 130, 25)),
+      _CarPart('rear_bumper', 'Rear Bumper', const Rect.fromLTWH(115, 250, 130, 25)),
+      _CarPart('front_left_door', 'Front Left Door', const Rect.fromLTWH(60, 110, 65, 80)),
+      _CarPart('rear_left_door', 'Rear Left Door', const Rect.fromLTWH(60, 175, 65, 70)),
+      _CarPart('front_right_door', 'Front Right Door', const Rect.fromLTWH(235, 110, 65, 80)),
+      _CarPart('rear_right_door', 'Rear Right Door', const Rect.fromLTWH(235, 175, 65, 70)),
+      _CarPart('left_fender', 'Left Fender', const Rect.fromLTWH(50, 80, 55, 60)),
+      _CarPart('right_fender', 'Right Fender', const Rect.fromLTWH(255, 80, 55, 60)),
+      _CarPart('left_rear_fender', 'Left Rear Fender', const Rect.fromLTWH(50, 200, 55, 60)),
+      _CarPart('right_rear_fender', 'Right Rear Fender', const Rect.fromLTWH(255, 200, 55, 60)),
+    ],
+    'suv': [
+      _CarPart('hood', 'Hood', const Rect.fromLTWH(110, 100, 140, 70)),
+      _CarPart('roof', 'Roof', const Rect.fromLTWH(90, 55, 180, 65)),
+      _CarPart('tailgate', 'Tailgate', const Rect.fromLTWH(110, 205, 140, 65)),
+      _CarPart('front_bumper', 'Front Bumper', const Rect.fromLTWH(105, 170, 150, 30)),
+      _CarPart('rear_bumper', 'Rear Bumper', const Rect.fromLTWH(105, 270, 150, 30)),
+      _CarPart('front_left_door', 'Front Left Door', const Rect.fromLTWH(45, 105, 70, 90)),
+      _CarPart('rear_left_door', 'Rear Left Door', const Rect.fromLTWH(45, 180, 70, 80)),
+      _CarPart('front_right_door', 'Front Right Door', const Rect.fromLTWH(245, 105, 70, 90)),
+      _CarPart('rear_right_door', 'Rear Right Door', const Rect.fromLTWH(245, 180, 70, 80)),
+      _CarPart('left_fender', 'Left Fender', const Rect.fromLTWH(35, 65, 65, 70)),
+      _CarPart('right_fender', 'Right Fender', const Rect.fromLTWH(260, 65, 65, 70)),
+      _CarPart('left_rear_fender', 'Left Rear Fender', const Rect.fromLTWH(35, 200, 65, 70)),
+      _CarPart('right_rear_fender', 'Right Rear Fender', const Rect.fromLTWH(260, 200, 65, 70)),
+    ],
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _painted = Set.from(widget.initialPainted);
+  }
+
+  void _togglePart(String id) {
+    setState(() {
+      if (_painted.contains(id)) _painted.remove(id);
+      else _painted.add(id);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Directionality(textDirection: T.isRTL ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(backgroundColor: Colors.white,
-        appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
-          leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: C.navy, size: 20),
-            onPressed: () => Navigator.pop(context)),
-          title: Text(T.g('damage_map'), style: const TextStyle(color: C.navy, fontWeight: FontWeight.w800, fontSize: 16)),
-          actions: [
-            TextButton(onPressed: _clearAll,
-              child: Text(T.g('clear'), style: const TextStyle(color: C.primary))),
-            TextButton(onPressed: () => Navigator.pop(context),
-              child: Text(T.g('done'), style: const TextStyle(color: C.primary, fontWeight: FontWeight.w700))),
-          ]),
-        body: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 32), children: [
-          // Intro card
-          Container(padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: const Color(0xFFEFF4FF), borderRadius: BorderRadius.circular(12)),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-              Icon(Icons.info_outline_rounded, color: C.primary, size: 18),
-              SizedBox(width: 8),
-              Expanded(child: Text(
-                'Mark painted or damaged panels on each view. All views are optional — only fill in what applies. You can also add real photos of damaged parts below.',
-                style: TextStyle(fontSize: 12, color: C.textSub, height: 1.5))),
-            ])),
-          const SizedBox(height: 14),
-          // Five view canvases
-          ..._views.map((v) => Padding(padding: const EdgeInsets.only(bottom: 14),
-            child: _ViewCanvas(view: v, strokes: _strokes[v.key]!,
-              onAddStroke: (p) => setState(() => _strokes[v.key]!.add(p)),
-              onClearView: () => setState(() => _strokes[v.key]!.clear())))),
-          // Damage photos section
-          _SectionHeader(icon: Icons.photo_camera_outlined,
-            title: 'Photos of Damaged Parts',
-            sub: 'Optional · Real photos help buyers see exact condition'),
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4, crossAxisSpacing: 8, mainAxisSpacing: 8, childAspectRatio: 1),
-            itemCount: 8,
-            itemBuilder: (_, i) {
-              if (i < _photoCount) {
-                return Container(
-                  decoration: BoxDecoration(color: C.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: C.primary.withOpacity(0.3))),
-                  child: Stack(children: [
-                    const Center(child: Icon(Icons.image_rounded, color: C.primary, size: 30)),
-                    Positioned(top: 2, right: 2, child: GestureDetector(onTap: () => setState(() => _photoCount--),
-                      child: Container(width: 20, height: 20,
-                        decoration: const BoxDecoration(shape: BoxShape.circle, color: C.red),
-                        child: const Icon(Icons.close_rounded, color: Colors.white, size: 14)))),
-                  ]),
+    final theme = ThemeManager.active;
+    final parts = _parts[_bodyType]!;
+    final paintedNames = parts.where((p) => _painted.contains(p.id)).map((p) => p.label).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Painted Parts'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        actions: [
+          TextButton(
+            onPressed: () {
+              widget.onSave?.call(_painted.toList());
+              Navigator.pop(context);
+            },
+            child: Text('Save', style: TextStyle(color: theme.primary, fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // ── Body type selector ─────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _bodyType = 'sedan'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: _bodyType == 'sedan' ? theme.primary : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _bodyType == 'sedan' ? theme.primary : Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.directions_car, color: _bodyType == 'sedan' ? Colors.white : Colors.grey.shade600),
+                          const SizedBox(width: 8),
+                          Text('Sedan', style: TextStyle(fontWeight: FontWeight.w600, color: _bodyType == 'sedan' ? Colors.white : Colors.grey.shade700)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _bodyType = 'suv'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: _bodyType == 'suv' ? theme.primary : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _bodyType == 'suv' ? theme.primary : Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.airport_shuttle, color: _bodyType == 'suv' ? Colors.white : Colors.grey.shade600),
+                          const SizedBox(width: 8),
+                          Text('SUV', style: TextStyle(fontWeight: FontWeight.w600, color: _bodyType == 'suv' ? Colors.white : Colors.grey.shade700)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Instruction ──────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.touch_app, color: Colors.amber.shade700, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tap on the car body parts that have been painted or repaired',
+                      style: TextStyle(color: Colors.amber.shade800, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // ── Car sketch with tappable parts ────────────────────────────
+          Expanded(
+            child: GestureDetector(
+              onTapDown: (details) {
+                final pos = details.localPosition;
+                for (final part in parts) {
+                  if (part.rect.contains(pos)) {
+                    _togglePart(part.id);
+                    break;
+                  }
+                }
+              },
+              child: CustomPaint(
+                painter: _CarBodyPainter(bodyType: _bodyType, parts: parts, painted: _painted),
+                child: Container(width: double.infinity),
+              ),
+            ),
+          ),
+
+          // ── Painted parts list ────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.grey.shade50,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Painted Parts (${_painted.length})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    if (_painted.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => setState(() => _painted.clear()),
+                        child: Text('Clear All', style: TextStyle(color: theme.primary, fontSize: 13)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (paintedNames.isEmpty)
+                  Text('No parts selected', style: TextStyle(color: Colors.grey.shade500, fontSize: 13))
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: paintedNames.map((name) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.orange.shade300),
+                      ),
+                      child: Text(name, style: TextStyle(color: Colors.orange.shade800, fontSize: 12, fontWeight: FontWeight.w500)),
+                    )).toList(),
+                  ),
+              ],
+            ),
+          ),
+
+          // ── Part selector list ─────────────────────────────────────
+          Container(
+            height: 60,
+            color: Colors.white,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              itemCount: parts.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final part = parts[i];
+                final isPainted = _painted.contains(part.id);
+                return GestureDetector(
+                  onTap: () => _togglePart(part.id),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isPainted ? Colors.orange.shade100 : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isPainted ? Colors.orange.shade400 : Colors.grey.shade300),
+                    ),
+                    child: Text(
+                      part.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isPainted ? Colors.orange.shade800 : Colors.grey.shade700,
+                        fontWeight: isPainted ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
                 );
-              }
-              if (i == _photoCount && _photoCount < 8) {
-                return GestureDetector(onTap: () => setState(() => _photoCount++),
-                  child: Container(decoration: BoxDecoration(color: const Color(0xFFF4F7FF),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: C.border, style: BorderStyle.solid)),
-                    child: const Icon(Icons.add_a_photo_outlined, color: C.textSub, size: 26)));
-              }
-              return Container(decoration: BoxDecoration(color: const Color(0xFFFAFBFC),
-                borderRadius: BorderRadius.circular(10), border: Border.all(color: C.border)));
-            }),
-          const SizedBox(height: 6),
-          Text('$_photoCount of 8 photos added', style: const TextStyle(fontSize: 11, color: C.textSub)),
-          const SizedBox(height: 18),
-          // Airbag deployment toggle
-          _SectionHeader(icon: Icons.airline_seat_legroom_extra_rounded,
-            title: 'Airbag Deployment',
-            sub: 'Required · Buyers need to know about previous airbag deployment'),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(child: _AirbagOption(label: 'Not Deployed', icon: Icons.check_circle_rounded, color: C.green,
-              selected: _airbagsDeployed == false, onTap: () => setState(() => _airbagsDeployed = false))),
-            const SizedBox(width: 10),
-            Expanded(child: _AirbagOption(label: 'Deployed', icon: Icons.warning_rounded, color: C.red,
-              selected: _airbagsDeployed == true, onTap: () => setState(() => _airbagsDeployed = true))),
-          ]),
-          const SizedBox(height: 14),
-          // Legend
-          Padding(padding: const EdgeInsets.all(8), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Container(width: 14, height: 14, decoration: BoxDecoration(shape: BoxShape.circle, color: C.red.withOpacity(0.7))),
-            const SizedBox(width: 8),
-            const Text('Painted / Damaged area', style: TextStyle(fontSize: 12, color: C.textSub)),
-          ])),
-        ]),
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// One paint-able canvas for a single view
-class _ViewCanvas extends StatelessWidget {
-  final _DamageView view;
-  final List<Offset> strokes;
-  final ValueChanged<Offset> onAddStroke;
-  final VoidCallback onClearView;
-  const _ViewCanvas({required this.view, required this.strokes, required this.onAddStroke, required this.onClearView});
+// ── Data class for car parts ─────────────────────────────────────────────
+class _CarPart {
+  final String id;
+  final String label;
+  final Rect rect;
+  const _CarPart(this.id, this.label, this.rect);
+}
+
+// ── Custom painter for car sketch ─────────────────────────────────────────
+class _CarBodyPainter extends CustomPainter {
+  final String bodyType;
+  final List<_CarPart> parts;
+  final Set<String> painted;
+
+  _CarBodyPainter({required this.bodyType, required this.parts, required this.painted});
 
   @override
-  Widget build(BuildContext context) {
-    final hasStrokes = strokes.isNotEmpty;
-    return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: Colors.white,
-        border: Border.all(color: hasStrokes ? C.red.withOpacity(0.4) : C.border, width: hasStrokes ? 1.6 : 1)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: const EdgeInsets.fromLTRB(14, 12, 14, 8), child: Row(children: [
-          Container(width: 28, height: 28, decoration: BoxDecoration(shape: BoxShape.circle, color: C.primary.withOpacity(0.1)),
-            child: Center(child: Text(view.label.split(' ').first[0],
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: C.primary)))),
-          const SizedBox(width: 10),
-          Expanded(child: Text(view.label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: C.navy))),
-          if (hasStrokes) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: C.red.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-            child: Text('${strokes.length} marks',
-              style: const TextStyle(fontSize: 10, color: C.red, fontWeight: FontWeight.w700))),
-          if (hasStrokes) const SizedBox(width: 6),
-          if (hasStrokes) GestureDetector(onTap: onClearView,
-            child: const Icon(Icons.refresh_rounded, color: C.textSub, size: 18))
-          else const Text('Optional', style: TextStyle(fontSize: 10, color: C.textSub)),
-        ])),
-        Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          child: AspectRatio(aspectRatio: 16 / 10,
-            child: GestureDetector(
-              onPanUpdate: (d) {
-                final box = context.findRenderObject() as RenderBox?;
-                if (box != null) onAddStroke(box.globalToLocal(d.globalPosition));
-              },
-              child: Container(
-                decoration: BoxDecoration(color: const Color(0xFFF8F9FF), borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: C.border)),
-                child: ClipRRect(borderRadius: BorderRadius.circular(10), child: CustomPaint(
-                  painter: _DmgPainter(pts: strokes),
-                  child: Center(child: Transform.rotate(
-                    angle: view.iconRotation,
-                    child: Icon(view.icon, size: 110, color: C.primary.withOpacity(0.18)))))))))),
-      ]),
-    );
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final scale = size.width / 360;
+
+    // Draw car outline (simplified top-down view)
+    _drawCarOutline(canvas, size, scale);
+
+    // Draw each part
+    for (final part in parts) {
+      final scaledRect = Rect.fromLTWH(
+        part.rect.left * scale,
+        part.rect.top * scale,
+        part.rect.width * scale,
+        part.rect.height * scale,
+      );
+      final isPainted = painted.contains(part.id);
+      final paint = Paint()
+        ..color = isPainted ? Colors.orange.withOpacity(0.6) : Colors.blue.withOpacity(0.08)
+        ..style = PaintingStyle.fill;
+      final borderPaint = Paint()
+        ..color = isPainted ? Colors.orange.shade700 : Colors.blue.shade300
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = isPainted ? 2.0 : 1.0;
+
+      final rRect = RRect.fromRectAndRadius(scaledRect, const Radius.circular(6));
+      canvas.drawRRect(rRect, paint);
+      canvas.drawRRect(rRect, borderPaint);
+
+      // Draw label
+      if (isPainted) {
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: part.label.split(' ').last,
+            style: TextStyle(color: Colors.orange.shade900, fontSize: 9 * scale, fontWeight: FontWeight.w600),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout(maxWidth: scaledRect.width);
+        textPainter.paint(canvas, Offset(scaledRect.left + (scaledRect.width - textPainter.width) / 2, scaledRect.top + (scaledRect.height - textPainter.height) / 2));
+      }
+    }
   }
-}
 
-class _SectionHeader extends StatelessWidget {
-  final IconData icon; final String title, sub;
-  const _SectionHeader({required this.icon, required this.title, required this.sub});
-  @override
-  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(top: 4),
-    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(icon, color: C.primary, size: 22),
-      const SizedBox(width: 10),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: C.navy)),
-        Text(sub,   style: const TextStyle(fontSize: 11, color: C.textSub)),
-      ])),
-    ]));
-}
+  void _drawCarOutline(Canvas canvas, Size size, double scale) {
+    final paint = Paint()
+      ..color = Colors.grey.shade300
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
 
-class _AirbagOption extends StatelessWidget {
-  final String label; final IconData icon; final Color color; final bool selected; final VoidCallback onTap;
-  const _AirbagOption({required this.label, required this.icon, required this.color, required this.selected, required this.onTap});
-  @override
-  Widget build(BuildContext context) => GestureDetector(onTap: onTap,
-    child: AnimatedContainer(duration: const Duration(milliseconds: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12),
-        color: selected ? color.withOpacity(0.08) : Colors.white,
-        border: Border.all(color: selected ? color : C.border, width: selected ? 2 : 1.2)),
-      child: Column(children: [
-        Icon(icon, color: selected ? color : C.textSub, size: 26),
-        const SizedBox(height: 6),
-        Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: selected ? color : C.textMain)),
-      ])));
-}
+    if (bodyType == 'sedan') {
+      // Sedan top-down silhouette
+      final path = Path();
+      final cx = size.width / 2;
+      path.moveTo(cx - 55 * scale, 35 * scale);
+      path.quadraticBezierTo(cx, 20 * scale, cx + 55 * scale, 35 * scale);
+      path.lineTo(cx + 70 * scale, 160 * scale);
+      path.quadraticBezierTo(cx + 75 * scale, 195 * scale, cx + 70 * scale, 225 * scale);
+      path.quadraticBezierTo(cx, 250 * scale, cx - 70 * scale, 225 * scale);
+      path.lineTo(cx - 70 * scale, 160 * scale);
+      path.quadraticBezierTo(cx - 75 * scale, 55 * scale, cx - 55 * scale, 35 * scale);
+      canvas.drawPath(path, paint);
+    } else {
+      // SUV top-down silhouette (wider/taller)
+      final path = Path();
+      final cx = size.width / 2;
+      path.moveTo(cx - 65 * scale, 30 * scale);
+      path.quadraticBezierTo(cx, 15 * scale, cx + 65 * scale, 30 * scale);
+      path.lineTo(cx + 85 * scale, 170 * scale);
+      path.quadraticBezierTo(cx + 88 * scale, 210 * scale, cx + 80 * scale, 250 * scale);
+      path.quadraticBezierTo(cx, 275 * scale, cx - 80 * scale, 250 * scale);
+      path.lineTo(cx - 85 * scale, 170 * scale);
+      path.quadraticBezierTo(cx - 88 * scale, 55 * scale, cx - 65 * scale, 30 * scale);
+      canvas.drawPath(path, paint);
+    }
 
-class _DmgPainter extends CustomPainter {
-  final List<Offset> pts;
-  const _DmgPainter({required this.pts});
-  @override void paint(Canvas c, Size s) {
-    for (final p in pts) c.drawCircle(p, 8, Paint()..color = C.red.withOpacity(0.6)..strokeCap = StrokeCap.round);
+    // Center line
+    final dashedPaint = Paint()
+      ..color = Colors.grey.shade200
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawLine(Offset(size.width / 2, 20 * scale), Offset(size.width / 2, size.height - 20 * scale), dashedPaint);
   }
-  @override bool shouldRepaint(_DmgPainter o) => o.pts != pts;
+
+  @override
+  bool shouldRepaint(covariant _CarBodyPainter old) =>
+      old.painted != painted || old.bodyType != bodyType;
 }

@@ -26,8 +26,9 @@ class Themes {
     id: 'ocean_blue', name: 'Ocean Blue',
     primary: Color(0xFF1565C0), primaryDk: Color(0xFF0D47A1), primaryLt: Color(0xFF1E88E5),
     accent: Color(0xFF42A5F5), navy: Color(0xFF0A1F5C), bg: Color(0xFFF5F7FA),
-    icon: Icons.water_drop_outlined,  );
-  tatic const oledBlack = AppTheme(
+    icon: Icons.water_drop_outlined,
+  );
+  static const oledBlack = AppTheme(
     id: 'oled_black', name: 'OLED Black',
     primary: Color(0xFF42A5F5), primaryDk: Color(0xFF1E88E5), primaryLt: Color(0xFF64B5F6),
     accent: Color(0xFF90CAF9), navy: Color(0xFFE3F2FD), bg: Color(0xFF000000),
@@ -143,7 +144,7 @@ class ThemeManager {
     } else {
       _active = Themes.oceanBlue;
     }
-themeNotifier.value = _active;
+    themeNotifier.value = _active;
   }
 
   static void load() {

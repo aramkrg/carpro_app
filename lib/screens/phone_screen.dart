@@ -7,10 +7,9 @@ import '../core/theme.dart';
 import '../widgets/shared_widgets.dart';
 import 'main_shell.dart';
 import 'otp_screen.dart';
+import 'registration_type_screen.dart';
 
 class PhoneScreen extends StatefulWidget {
-  /// If true, this screen was opened from the login wall.
-  /// On successful login, pop with `true` so the original action can resume.
   final bool returnAfterLogin;
   const PhoneScreen({super.key, this.returnAfterLogin = false});
   @override State<PhoneScreen> createState() => _PhoneState();
@@ -64,11 +63,16 @@ class _PhoneState extends State<PhoneScreen> {
           decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
             colors: [pri.withOpacity(0.08), Colors.white])),
           child: SafeArea(child: SingleChildScrollView(padding: const EdgeInsets.symmetric(horizontal: 26), child: Column(children: [
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             AppLogoBall(sz: 68),
             const SizedBox(height: 10),
             const Text('CarPro', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: C.navy)),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
+            // REQ 8: Registration type choice
+            if (!widget.returnAfterLogin) ...[
+              _RegTypeRow(pri: pri),
+              const SizedBox(height: 20),
+            ],
             Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20),
               boxShadow: [BoxShadow(color: pri.withOpacity(0.08), blurRadius: 24, offset: const Offset(0, 8))]),
               child: Column(children: [
@@ -104,5 +108,63 @@ class _PhoneState extends State<PhoneScreen> {
               child: Text(T.g('browse_guest'), style: TextStyle(color: pri, fontSize: 14, fontWeight: FontWeight.w600))),
             const SizedBox(height: 30),
           ]))))));
+  }
+}
+
+/// REQ 8: Registration type selector (Normal / Dealer)
+class _RegTypeRow extends StatefulWidget {
+  final Color pri;
+  const _RegTypeRow({required this.pri});
+  @override State<_RegTypeRow> createState() => _RegTypeRowState();
+}
+class _RegTypeRowState extends State<_RegTypeRow> {
+  String _type = 'normal';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('I am registering as:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.navy)),
+      const SizedBox(height: 10),
+      Row(children: [
+        Expanded(child: GestureDetector(
+          onTap: () => setState(() => _type = 'normal'),
+          child: AnimatedContainer(duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: _type == 'normal' ? widget.pri : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _type == 'normal' ? widget.pri : C.border),
+              boxShadow: _type == 'normal' ? [BoxShadow(color: widget.pri.withOpacity(0.2), blurRadius: 8)] : null),
+            child: Column(children: [
+              Icon(Icons.person_rounded, color: _type == 'normal' ? Colors.white : C.textSub, size: 26),
+              const SizedBox(height: 4),
+              Text('Private Seller', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                color: _type == 'normal' ? Colors.white : C.textMain)),
+              Text('Buy & Sell Cars', style: TextStyle(fontSize: 10,
+                color: _type == 'normal' ? Colors.white70 : C.textSub)),
+            ])))),
+        const SizedBox(width: 10),
+        Expanded(child: GestureDetector(
+          onTap: () {
+            setState(() => _type = 'dealer');
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DealerRegistrationScreen()));
+          },
+          child: AnimatedContainer(duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: _type == 'dealer' ? const Color(0xFFFF8F00) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _type == 'dealer' ? const Color(0xFFFF8F00) : C.border),
+              boxShadow: _type == 'dealer' ? [BoxShadow(color: const Color(0xFFFF8F00).withOpacity(0.2), blurRadius: 8)] : null),
+            child: Column(children: [
+              Icon(Icons.storefront_rounded, color: _type == 'dealer' ? Colors.white : C.textSub, size: 26),
+              const SizedBox(height: 4),
+              Text('Dealer/Showroom', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                color: _type == 'dealer' ? Colors.white : C.textMain)),
+              Text('Business Account', style: TextStyle(fontSize: 10,
+                color: _type == 'dealer' ? Colors.white70 : C.textSub)),
+            ])))),
+      ]),
+    ]);
   }
 }

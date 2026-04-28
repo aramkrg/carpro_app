@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../core/constants.dart';
 import '../core/translations.dart';
@@ -34,14 +35,14 @@ class BrandLogo extends StatelessWidget {
         child: Image.asset(
           'assets/brand_logos/$_fileName.png',
           width: size, height: size, fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => _LetterFallback(name: name, size: size)))));
+          errorBuilder: (_, _, _) => _LetterFallback(name: name, size: size)))));
   }
 }
 
 /// Fallback: colored circle with brand's first two letters.
 class _LetterFallback extends StatelessWidget {
   final String name; final double size;
-  const _LetterFallback({super.key, required this.name, required this.size});
+  const _LetterFallback({required this.name, required this.size});
   @override
   Widget build(BuildContext context) {
     final entry = kBrandData.firstWhere((b) => b['name'] == name,

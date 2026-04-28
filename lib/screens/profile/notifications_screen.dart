@@ -22,7 +22,7 @@ class NotificationsScreen extends StatelessWidget {
           title: Text(T.g('notifications'),
             style: const TextStyle(color: C.navy, fontWeight: FontWeight.w800, fontSize: 18))),
         body: ListView.separated(padding: const EdgeInsets.all(14), itemCount: notifs.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (_, i) {
             final n = notifs[i];
             return Container(padding: const EdgeInsets.all(14),

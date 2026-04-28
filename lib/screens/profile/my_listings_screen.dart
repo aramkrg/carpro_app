@@ -32,7 +32,7 @@ class MyListingsScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 13, color: C.textSub)),
             ]))
           : ListView.separated(padding: const EdgeInsets.all(14), itemCount: myCars.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (_, i) => CarCard(car: myCars[i], onFav: () {})),
       ));
   }

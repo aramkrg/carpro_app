@@ -74,7 +74,7 @@ class _ReelPageState extends State<ReelPage> with SingleTickerProviderStateMixin
         Center(child: Icon(Icons.directions_car_filled_rounded, size: 200, color: Colors.white.withOpacity(0.15))),
         // Pulsing play indicator (Phase 1: replaced by real video player)
         Center(child: AnimatedBuilder(animation: _pulse,
-          builder: (_, __) => Container(
+          builder: (_, _) => Container(
             width: 70 + _pulse.value * 14,
             height: 70 + _pulse.value * 14,
             decoration: BoxDecoration(shape: BoxShape.circle,

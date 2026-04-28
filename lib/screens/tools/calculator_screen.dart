@@ -60,8 +60,9 @@ class _BasicCalcState extends State<_BasicCalc> {
       final toks = <String>[];
       var buf = '';
       for (final ch in s.split('')) {
-        if ('0123456789.'.contains(ch)) buf += ch;
-        else { if (buf.isNotEmpty) { toks.add(buf); buf = ''; } toks.add(ch); }
+        if ('0123456789.'.contains(ch)) {
+          buf += ch;
+        } else { if (buf.isNotEmpty) { toks.add(buf); buf = ''; } toks.add(ch); }
       }
       if (buf.isNotEmpty) toks.add(buf);
       // First pass: × ÷ %
@@ -71,8 +72,9 @@ class _BasicCalcState extends State<_BasicCalc> {
           final a = double.parse(toks[i - 1]);
           final b = double.parse(toks[i + 1]);
           double r;
-          if (toks[i] == '*') r = a * b;
-          else if (toks[i] == '/') r = b == 0 ? double.nan : a / b;
+          if (toks[i] == '*') {
+            r = a * b;
+          } else if (toks[i] == '/') r = b == 0 ? double.nan : a / b;
           else r = a * b / 100;
           toks.replaceRange(i - 1, i + 2, [r.toString()]);
         } else { i += 2; }
@@ -82,7 +84,9 @@ class _BasicCalcState extends State<_BasicCalc> {
       i = 1;
       while (i < toks.length - 1) {
         final b = double.parse(toks[i + 1]);
-        if (toks[i] == '+') r += b; else if (toks[i] == '-') r -= b;
+        if (toks[i] == '+') {
+          r += b;
+        } else if (toks[i] == '-') r -= b;
         i += 2;
       }
       if (r.isNaN || r.isInfinite) return 'Error';
@@ -169,7 +173,9 @@ class _LoanCalcState extends State<_LoanCalc> {
     };
   }
 
-  double _pow(double x, int n) { double r = 1; for (int i = 0; i < n; i++) r *= x; return r; }
+  double _pow(double x, int n) { double r = 1; for (int i = 0; i < n; i++) {
+    r *= x;
+  } return r; }
 
   String _fmt(double v) => _currency == 'USD'
     ? '\$${v.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]},')}'

@@ -39,7 +39,7 @@ class _FavState extends State<FavoritesScreen> {
                 style: TextStyle(fontSize: 13, color: C.textSub), textAlign: TextAlign.center),
             ]))
           : ListView.separated(padding: const EdgeInsets.all(14), itemCount: favs.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (_, i) => CarCard(car: favs[i], onFav: () {
                 AuthService.toggleFavorite(favs[i]['id'] as String);
                 setState(() {});
